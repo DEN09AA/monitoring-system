@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Solar.Network Monitoramento</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background-image: url('c:/Users/danjn/Downloads/image1.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    min-height: 100vh;
+  }
+
+  /* Menu topo */
+  #menu {
+    display: none;
+    width: 100%;
+    background-color: rgba(248, 248, 248, 0.95);
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+    text-align: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+  }
+
+  #menu a {
+    margin: 0 15px;
+    color: #333;
+    text-decoration: none;
+    font-weight: bold;
+    padding: 12px 15px;
+    display: inline-block;
+  }
+
+  #menu a:hover {
+    color: #007bff;
+    background-color: #eee;
+  }
+
+  /* Área principal */
+  .main-area {
+    display: flex;
+    margin-top: 70px;
+    padding: 20px;
+    gap: 20px;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  /* Login */
+  .login-container {
+    background-color: rgba(219, 209, 209, 0.95);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    width: 300px;
+    text-align: left;
+  }
+
+  .form-group { margin-bottom: 15px; text-align: left; }
+  label { display: block; margin-bottom: 5px; }
+  input[type="text"], input[type="password"] { width: 100%; padding: 8px; box-sizing: border-box; }
+  button { width: 100%; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
+  button:hover { background-color: #218838; }
+
+  /* Abas / Conteúdos */
+  .aba-conteudo {
+    display: none;
+    background: rgba(17, 17, 17, 0.9);
+    border-radius: 10px;
+    box-shadow: 0 0 10px #222;
+    color: #eee;
+    padding: 15px;
+    flex-shrink: 0;
+    width: 300px;
+  }
+
+  .grupo { display: flex; flex-direction: column; gap: 8px; }
+  .item { background: rgba(255,255,255,0.05); padding: 8px; border-radius:6px; display: flex; justify-content: space-between; }
+  .label { font-weight: bold; font-size:0.9em; }
+  .valor { font-size:0.9em; }
+
+  /* Mapa lateral */
+  #mapa-container {
+    width: 600px;
+    height: 600px;
+    border: 2px solid #444;
+    border-radius: 10px;
+    flex-shrink: 0;
+    display: none;
+  }
+
+  /* Relatórios */
+  .painel-relatorios {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .painel {
+    flex: 1; 
+    background: rgba(17,17,17,0.9);
+    padding: 15px;
+    border-radius: 10px;
+    color: #eee;
+    box-shadow: 0 0 10px #222;
+  }
+</style>
+</head>
+<body>
+
+<!-- Menu -->
+<div id="menu">
+  <a href="#" onclick="mostrarAba('aba-dados')">Dados</a>
+  <a href="#" onclick="mostrarAba('aba-funcionalidades')">Funcionalidades</a>
+  <a href="#" onclick="mostrarAba('aba-configuracoes')">Configurações</a>
+  <a href="#" onclick="mostrarAba('aba-relatorios')">Relatórios</a>
+  <a href="#" onclick="logout()">Logout</a>
+</div>
+
+<!-- Main -->
+<div class="main-area">
+
+  <!-- Abas -->
+  <section id="aba-dados" class="aba-conteudo">
+    <h3>Inversor 1</h3>
+    <div class="grupo">
+      <div class="item"><div class="label">Corrente:</div><div class="valor" id="corrente">0 A</div></div>
+      <div class="item"><div class="label">Temperatura:</div><div class="valor" id="temp">0 °C</div></div>
+      <div class="item"><div class="label">Frequência:</div><div class="valor" id="frequencia">0 Hz</div></div>
+      <div class="item"><div class="label">Potência Aparente:</div><div class="valor" id="potAparente">0 VA</div></div>
+      <div class="item"><div class="label">Fator de Potência:</div><div class="valor" id="fatorPotencia">0.00</div></div>
+      <div class="item"><div class="label">Energia Acumulada:</div><div class="valor" id="energiaAcumulada">0 kWh</div></div>
+      <div class="item"><div class="label">THD:</div><div class="valor" id="thd">0 %</div></div>
+      <div class="item"><div class="label">Energia Instantânea:</div><div class="valor" id="energiaInstantanea">0 kW</div></div>
+      <div class="item"><div class="label">Estado do Inversor:</div><div class="valor" id="estadoInversor">OK</div></div>
+      <div class="item"><div class="label">Carga:</div><div class="valor" id="carga">0 %</div></div>
+      <div class="item"><div class="label">Horas de Operação:</div><div class="valor" id="horasOperacao">0 h</div></div>
+    </div>
+  </section>
+
+  <section id="aba-funcionalidades" class="aba-conteudo">
+    <h3>Funcionalidades</h3>
+    <div class="comandos-analogicos">
+      <button onclick="enviarComando('aumentar')">Relatórios</button><br><br>
+      <button onclick="enviarComando('diminuir')">Ligar Usinas</button><br><br>
+      <button onclick="enviarComando('ligar')">Geração de Usinas</button><br><br>
+      <button onclick="enviarComando('desligar')">Desligar Inversor</button><br><br>
+    </div>
+  </section>
+
+  <section id="aba-configuracoes" class="aba-conteudo">
+    <h3>Configurações</h3>
+    <button onclick="enviarComando('atualizar')">Intervalo de atualização</button><br><br>
+    <button onclick="enviarComando('unidades')">Unidades de medida</button><br><br>
+    <button onclick="enviarComando('alertas')">Alertas e notificações</button>
+  </section>
+
+  <section id="aba-relatorios" class="aba-conteudo">
+    <h3>Relatórios Diários</h3>
+    <div class="painel-relatorios">
+      <div class="painel" id="relatorio-inversor1">
+        <h4>Inversor 1</h4>
+        <div class="conteudo-relatorio"></div>
+      </div>
+      <div class="painel" id="relatorio-inversor2">
+        <h4>Inversor 2</h4>
+        <div class="conteudo-relatorio"></div>
+      </div>
+      <div class="painel" id="relatorio-inversor3">
+        <h4>Inversor 3</h4>
+        <div class="conteudo-relatorio"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Login -->
+  <div id="login-area" class="login-container">
+    <h2>Login</h2>
+    <div class="form-group">
+      <label for="username">Usuário</label>
+      <input type="text" id="username" required />
+    </div>
+    <div class="form-group">
+      <label for="password">Senha</label>
+      <input type="password" id="password" required />
+    </div>
+    <div id="login-error" style="color:red;font-size:0.9em;margin-bottom:10px"></div>
+    <button onclick="login()">Entrar</button>
+  </div>
+
+  <!-- Mapa -->
+  <div id="mapa-container"></div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+const relatoriosDiarios = {
+  'Inversor 1': [],
+  'Inversor 2': [],
+  'Inversor 3': []
+};
+
+function gerarRelatorio(inversorId){
+  const dataHoje = new Date().toLocaleDateString();
+  const relatorio = {
+    data: dataHoje,
+    corrente: document.getElementById('corrente').textContent,
+    temperatura: document.getElementById('temp').textContent,
+    frequencia: document.getElementById('frequencia').textContent,
+    potencia: document.getElementById('energiaInstantanea').textContent,
+    estado: document.getElementById('estadoInversor').textContent
+  };
+  relatoriosDiarios[inversorId].push(relatorio);
+
+  const painel = document.getElementById(`relatorio-${inversorId.toLowerCase().replace(' ','')}`);
+  painel.querySelector('.conteudo-relatorio').innerHTML = relatoriosDiarios[inversorId].map(r => 
+    `<p><b>${r.data}</b>: Corrente: ${r.corrente}, Temp: ${r.temperatura}, Freq: ${r.frequencia}, Potência: ${r.potencia}, Estado: ${r.estado}</p>`
+  ).join('');
+}
+
+// Gera relatórios para todos os inversores
+function gerarRelatoriosAutomatico(){
+  ['Inversor 1','Inversor 2','Inversor 3'].forEach(inv => gerarRelatorio(inv));
+}
+
+// Para teste rápido a cada 24h
+setInterval(gerarRelatoriosAutomatico, 86400000);
+
+function enviarComando(acao){
+  switch(acao){
+    case 'aumentar': alert('Comando: aumentar tensão enviado!'); break;
+    case 'diminuir': alert('Comando: diminuir tensão enviado!'); break;
+    case 'ligar': alert('Comando: ligar inversor enviado!'); break;
+    case 'desligar': alert('Comando: desligar inversor enviado!'); break;
+    default: console.log('Comando desconhecido');
+  }
+}
+
+const validUser = 'admin';
+const validPass = '1234';
+
+function mostrarAba(id){
+  document.querySelectorAll('.aba-conteudo').forEach(el=>el.style.display='none');
+  document.getElementById(id).style.display='block';
+}
+
+function login(){
+  const user = document.getElementById('username').value.trim();
+  const pass = document.getElementById('password').value.trim();
+  const errorDiv = document.getElementById('login-error');
+
+  if(user===validUser && pass===validPass){
+    errorDiv.textContent='';
+    document.getElementById('login-area').style.display='none';
+    document.getElementById('menu').style.display='block';
+    document.getElementById('aba-dados').style.display='block';
+    document.getElementById('mapa-container').style.display='block';
+    startMonitoring();
+    iniciarMapa();
+  } else {
+    errorDiv.textContent='Usuário ou senha inválidos.';
+  }
+}
+
+function logout(){
+  document.getElementById('menu').style.display='none';
+  document.querySelectorAll('.aba-conteudo').forEach(el=>el.style.display='none');
+  document.getElementById('login-area').style.display='block';
+  document.getElementById('mapa-container').style.display='none';
+}
+
+function randomRange(min,max,decimals=2){ return (Math.random()*(max-min)+min).toFixed(decimals); }
+
+function startMonitoring(){
+  setInterval(()=>{
+    document.getElementById('corrente').textContent=randomRange(5,15)+' A';
+    document.getElementById('temp').textContent=randomRange(20,60,1)+' °C';
+    document.getElementById('frequencia').textContent=randomRange(58,62,2)+' Hz';
+    document.getElementById('potAparente').textContent=randomRange(100,1200)+' VA';
+    document.getElementById('fatorPotencia').textContent=randomRange(0.8,1,2);
+    document.getElementById('energiaAcumulada').textContent=randomRange(0,5000)+' kWh';
+    document.getElementById('thd').textContent=randomRange(0,5)+' %';
+    const potKW=Number(randomRange(0.5,5,2));
+    document.getElementById('energiaInstantanea').textContent=potKW.toFixed(2)+' kW';
+    document.getElementById('estadoInversor').textContent=Math.random()>0.1?'OK':'Alerta';
+    document.getElementById('carga').textContent=randomRange(0,100,0)+' %';
+    document.getElementById('horasOperacao').textContent=Math.floor(randomRange(0,10000,0))+' h';
+  },2000);
+}
+
+function iniciarMapa(){
+  const mapa=L.map('mapa-container').setView([-23.55052,-46.633308],5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'© OpenStreetMap'
+  }).addTo(mapa);
+
+  const inversores=[
+    {nome:"Inversor 1",lat:-23.55052,lng:-46.633308,status:"OK"},
+    {nome:"Inversor 2",lat:-22.906847,lng:-43.172896,status:"Manutenção"},
+    {nome:"Inversor 3",lat:-19.916681,lng:-43.934493,status:"OK"}
+  ];
+
+  inversores.forEach(inv=>{
+    L.marker([inv.lat,inv.lng]).addTo(mapa).bindPopup(`<b>${inv.nome}</b><br>Status: ${inv.status}`);
+  });
+}
+</script>
+</body>
+</html>
